@@ -11,7 +11,7 @@ fun main(args: Array<String>) {
     EventQueue.invokeLater {
         window = Window("swing")
     }
-    pole[2][3] = Cell.MOUSE
+    pole[(0..size-1).random()][(0..size-1).random()] = Cell.MOUSE
 }
 
 val pole = Array(size, {Array(size, {Cell.NONE})})
