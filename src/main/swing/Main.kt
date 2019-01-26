@@ -7,6 +7,13 @@ enum class Cell(val color: Color){NONE(Color.WHITE), SNAKE(Color.RED), MOUSE(Col
 enum class State{START, GAME, END}
 
 var scopes = 0
+    set(value) {
+        field = value
+        if (scopesMax<value) scopesMax = value
+        window.redrawScope()
+        window.redrawMaxScope()
+    }
+var scopesMax = 0
 const val SIZE = 10
 var snake = Snake()
 val feed = Feed()
@@ -25,7 +32,7 @@ var state = State.START //состояние игры
             }
             field = value
             window.redrawText("")
-            timer(null, true, 0, 300, action = {//новый игровой таймер
+            timer(null, true, 0, 200, action = {//новый игровой таймер
                 if ((field == State.GAME) and (value == State.GAME)) {//пров. оба значения, иначе - последнее дергание
                     snake.go()
                     window.redraw()
@@ -68,7 +75,6 @@ class Snake {
         list.add(0, future(side))
         if (isFeed(first())){
             scopes++
-            window.redrawScope()
             feed.new()
             val last2 = Point(last())
             list.add(last2)
@@ -97,7 +103,7 @@ class Feed {
     }
     fun deadlock(p: Point) = (p.x == 0 || p.x == SIZE-1) and (p.y == 0 || p.y == SIZE-1)
 
-    constructor() {
+    init {
         new()
     }
 }

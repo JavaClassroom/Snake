@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 import javax.swing.*
+import kotlin.concurrent.timer
 
 class Window(title: String): JFrame(), KeyListener{
 
@@ -40,9 +41,19 @@ class Window(title: String): JFrame(), KeyListener{
 
     init {
         isUndecorated = true
+        opacity = 0.0f
+        timer(null, true, 0, 50, action = {
+            if (opacity <= 0.97f){
+                opacity+=0.03f
+            } else {
+                opacity = 1f
+                cancel()
+            }
+        })
+
 
         createUI()
-        pack()
+        pack()  //вызывается до visible
         isResizable = false
         setTitle(title)
         defaultCloseOperation = JFrame.EXIT_ON_CLOSE
@@ -51,13 +62,15 @@ class Window(title: String): JFrame(), KeyListener{
 
         addKeyListener(this)
         isFocusable = true
-        //focusableWindowState = true
-        //focusTraversalKeysEnabled = false
+        /*focusableWindowState = true
+        focusTraversalKeysEnabled = false*/
     }
 
     private lateinit var panel: MyJPanel
     private lateinit var labelScope: JLabel
     private lateinit var labelText: JLabel
+    private lateinit var buttonMax: JButton
+    private lateinit var labelMax: JLabel
 
     private fun createUI() {
         contentPane.layout = BorderLayout()
@@ -65,30 +78,55 @@ class Window(title: String): JFrame(), KeyListener{
         panel = MyJPanel()
         val panelSize = Dimension(300, 300)
         panel.preferredSize = panelSize
-        panel.maximumSize = panelSize
-        panel.minimumSize = panelSize
+        //panel.maximumSize = panelSize
+        //panel.minimumSize = panelSize
+        //panel.setSize(panelSize)
         panel.border = BorderFactory.createLineBorder(Color.BLACK)
         panel.background = Color.WHITE
+        panel.size
         add(panel)
         add(JPanel(), BorderLayout.EAST)
         add(JPanel(), BorderLayout.WEST)
         add(JPanel(), BorderLayout.NORTH)
 
-        //val buttonPan = JPanel(FlowLayout(FlowLayout.CENTER))
-        val buttonPan = JPanel(GridLayout(2, 1))
-            labelText = JLabel("новая игра? / SPACE", SwingConstants.CENTER)
-            labelText.preferredSize = Dimension(300,15)
-            buttonPan.add(labelText)
+        val buttonPan = JPanel(GridBagLayout())
+            val con = GridBagConstraints()
+            con.anchor = GridBagConstraints.CENTER  //выравниване по центрам
+            con.fill = GridBagConstraints.BOTH  //заполнять все пространство
+            con.insets = Insets(2, 2, 2, 2)
+            //GridBagConstraints.NONE - при изменении размеров, размер не изменится
 
-            labelScope = JLabel("scopes: $scopes", SwingConstants.CENTER)
-            labelScope.preferredSize = Dimension(300, 15)
-            buttonPan.add(labelScope)
+            con.gridx = 0   //первый столбец
+            con.weightx = 0.3   //пропорциональная ширина 1 столбца
+
+            buttonMax = JButton("сбросить лидера")
+            buttonMax.isFocusable = false
+            buttonMax.addActionListener { scopesMax = 0 }
+            con.gridy = 0
+            buttonPan.add(buttonMax, con)
+
+            labelMax = JLabel("лидер: $scopesMax", SwingConstants.CENTER)
+            con.gridy = 1
+            buttonPan.add(labelMax, con)
+
+            con.gridx = 1   //второй столбец
+            con.weightx = 0.7   //пропорциональная ширина второго столбца
+
+            labelText = JLabel("новая игра? / SPACE", SwingConstants.CENTER)
+            labelText.foreground = Color(255, 0, 0)
+            con.gridy = 0
+            buttonPan.add(labelText, con)
+
+            labelScope = JLabel("очки: $scopes", SwingConstants.CENTER)
+            con.gridy = 1
+            buttonPan.add(labelScope, con)
         add(buttonPan, BorderLayout.SOUTH)
     }
 
     fun redraw(){panel.repaint()}
     fun redrawScope() {labelScope.text = "очки: $scopes"}
     fun redrawText(s: String) {labelText.text = s}
+    fun redrawMaxScope(){labelMax.text = "лидер: $scopesMax"}
 
     private class MyJPanel: JPanel() {
         var cellSize = 0
