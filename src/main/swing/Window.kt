@@ -10,15 +10,24 @@ class Window(title: String): JFrame(), KeyListener{
 
     override fun keyPressed(e: KeyEvent?) {
         if (e == null) return
-        if (e.keyCode == VK_ESCAPE)
-            System.exit(0)
-        side = when (e.keyCode) {
-            VK_UP, VK_W -> Side.UP
-            VK_DOWN, VK_S -> Side.DOWN
-            VK_LEFT, VK_A -> Side.LEFT
-            VK_RIGHT, VK_D -> Side.RIGHT
-            else -> side
+        fun wasd(){ //первый старт игры (не рестарт) возможен клавишами управления для удобства
+            if (main.swing.state == State.START)
+                main.swing.state = State.GAME
         }
+        when (e.keyCode) {
+            VK_ESCAPE -> System.exit(0)
+            VK_SPACE -> main.swing.state = State.GAME
+
+            VK_UP, VK_W -> {snake.side = Snake.Side.UP
+                wasd()}
+            VK_DOWN, VK_S -> {snake.side = Snake.Side.DOWN
+                wasd()}
+            VK_LEFT, VK_A -> {snake.side = Snake.Side.LEFT
+                wasd()}
+            VK_RIGHT, VK_D -> {snake.side = Snake.Side.RIGHT
+                wasd()}
+        }
+
     }
 
     override fun keyReleased(e: KeyEvent?) {
@@ -43,11 +52,12 @@ class Window(title: String): JFrame(), KeyListener{
         addKeyListener(this)
         isFocusable = true
         //focusableWindowState = true
-        focusTraversalKeysEnabled = false
+        //focusTraversalKeysEnabled = false
     }
 
     private lateinit var panel: MyJPanel
     private lateinit var labelScope: JLabel
+    private lateinit var labelText: JLabel
 
     private fun createUI() {
         contentPane.layout = BorderLayout()
@@ -64,17 +74,21 @@ class Window(title: String): JFrame(), KeyListener{
         add(JPanel(), BorderLayout.WEST)
         add(JPanel(), BorderLayout.NORTH)
 
-        val buttonPan = JPanel(FlowLayout(FlowLayout.CENTER))
-            labelScope = JLabel("очки: $scopes", SwingConstants.CENTER)
-            labelScope.preferredSize = Dimension(300, 20)
+        //val buttonPan = JPanel(FlowLayout(FlowLayout.CENTER))
+        val buttonPan = JPanel(GridLayout(2, 1))
+            labelText = JLabel("новая игра? / SPACE", SwingConstants.CENTER)
+            labelText.preferredSize = Dimension(300,15)
+            buttonPan.add(labelText)
+
+            labelScope = JLabel("scopes: $scopes", SwingConstants.CENTER)
+            labelScope.preferredSize = Dimension(300, 15)
             buttonPan.add(labelScope)
         add(buttonPan, BorderLayout.SOUTH)
     }
 
-    fun redraw(){
-        panel.repaint()
-        labelScope.text = "очки: $scopes"
-    }
+    fun redraw(){panel.repaint()}
+    fun redrawScope() {labelScope.text = "очки: $scopes"}
+    fun redrawText(s: String) {labelText.text = s}
 
     private class MyJPanel: JPanel() {
         var cellSize = 0

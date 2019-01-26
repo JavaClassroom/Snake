@@ -1,81 +1,103 @@
 package main.swing
 
-import tornadofx.move
 import java.awt.*
 import kotlin.concurrent.timer
 
 enum class Cell(val color: Color){NONE(Color.WHITE), SNAKE(Color.RED), MOUSE(Color.GREEN)}
-enum class Side(var x: Int, var y: Int){
-    STOP(0, 0), UP(0, -1), DOWN(0, 1), LEFT(-1, 0), RIGHT(1, 0)
-}
+enum class State{START, GAME, END}
+
 var scopes = 0
-val SIZE = 10
-val snake = Snake()
+const val SIZE = 10
+var snake = Snake()
 val feed = Feed()
-var side = Side.STOP
-var oldSide = side
 lateinit var window: Window
-var endGame = false
+
+var state = State.START //состояние игры
+    set(value) {
+        if ((field != State.GAME) and (value == State.GAME)){//начало игры или новая
+            if (field == State.END){//игра была проиграна
+                //пересоздание объектов
+                snake = Snake()
+                feed.new()
+                window.redraw()
+                scopes = 0
+                window.redrawScope()
+            }
+            field = value
+            window.redrawText("")
+            timer(null, true, 0, 300, action = {//новый игровой таймер
+                if ((field == State.GAME) and (value == State.GAME)) {//пров. оба значения, иначе - последнее дергание
+                    snake.go()
+                    window.redraw()
+                } else  cancel()//прекращение при смене игрового состояния
+            })
+        } else if ((field == State.GAME) and (value == State.END)){//проигрыш
+            field = value
+            window.redrawText("новая игра? / SPACE")
+        }
+
+    }
 
 fun main(args: Array<String>) {
     /*EventQueue.invokeLater {
         window = Window("Змейка")
     }*/
     window = Window("Змейка")
-    timer(null, true, 0, 300, action = {
-        if ((side != Side.STOP) and !endGame){
-            snake.go()
-            window.redraw()
-        }
-    })
 }
 
 class Snake {
-    val list = arrayListOf(
-        Point(SIZE/2, SIZE/2),
+    enum class Side(var x: Int, var y: Int){
+        UP(0, -1), DOWN(0, 1), LEFT(-1, 0), RIGHT(1, 0)
+    }
+    val list = arrayListOf<Point>(Point(SIZE/2, SIZE/2),
         Point(SIZE/2, SIZE/2+1),
         Point(SIZE/2, SIZE/2+2))
-    private lateinit var last: Point
-    private lateinit var first: Point
-    val future = Point(0, 0)
+
+    var side = Side.UP  //в какую сторону ползти
+        set(value) {
+            if (!isMoveBack(future(value))) //сторона меняется только не на обратное движение
+                field = value
+        }
 
     fun go(){
-        last = snake.list.last()    //хвост
-        first = snake.list.first()  //голова
-        future.move(first.x+side.x, first.y+side.y) //ожидаемая новая позиция головы
-        if (future.x<0 || future.x>=SIZE || future.y<0 || future.y>= SIZE   //вляпались в край поля
-            || (list.contains(future) and (future.location!=list[1]) and (future.location!=last))) {  //вляпались в себя
-            endGame()
+        if (isOutside(future(side)) || isCrush(future(side))){
+            state = State.END
             return
         }
-        if (future.location == list[1].location) { //нельзя ползти назад
-            side = oldSide  //меняем направление на предыдущее
-            future.move(first.x+side.x, first.y+side.y) //новая позиция головы будет по старому направлению
-        }
-        last.location = future.location  //смена координат последнего блока на будущего первого
-        snake.list.move(last, 0)    //последний блок -> первый блок
-        oldSide = side  //запоминаем новое направление
-        if (last.location == feed.point.location) {   //если поели
+        list.remove(last())
+        list.add(0, future(side))
+        if (isFeed(first())){
             scopes++
-            feed.new()  //теперь еда в другом месте
-            var last2 = Point(list.last().x, list.last().y) //запоминаем где был хвост
-            go()    //еще растем вперед
-            list.add(last2)     //увеличиваем на 1 блок
+            window.redrawScope()
+            feed.new()
+            val last2 = Point(last())
+            list.add(last2)
+            go()
         }
     }
+
+    private fun isOutside(point: Point) = point.x<0 || point.y<0 || point.x>=SIZE || point.y>=SIZE
+    private fun isMoveBack(point: Point) = list[1] == point
+    private fun isFeed(point: Point) = feed.point == point
+    private fun isCrush(point: Point) = contain(point) and (list[1] != point) and (list.last() != point)
+    private fun first() = list.first()
+    private fun last() = list.last()
+    private fun future(s: Side) = Point(first().x+s.x, first().y+s.y)
+
+    fun contain(point: Point) = list.contains(point)
+
 }
 
 class Feed {
-    private fun randomPoint() = Point((0..SIZE-1).random(), (0..SIZE-1).random())
+    private fun randomPoint() = Point((0..SIZE - 1).random(), (0..SIZE - 1).random())
     var point = randomPoint()
-    fun new(){
-        while (snake.list.contains(point)) point = randomPoint()
+    fun new() {
+        while (snake.contain(point) || deadlock(point))
+            point = randomPoint()
     }
-    constructor(){
+    fun deadlock(p: Point) = (p.x == 0 || p.x == SIZE-1) and (p.y == 0 || p.y == SIZE-1)
+
+    constructor() {
         new()
     }
-}
-
-fun endGame(){
-    endGame = true
 }
