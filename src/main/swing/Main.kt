@@ -11,9 +11,12 @@ var scopes = 0
         field = value
         if (scopesMax<value) scopesMax = value
         window.redrawScope()
-        window.redrawMaxScope()
     }
 var scopesMax = 0
+    set(value) {
+        field = value
+        window.redrawMaxScope()
+    }
 const val SIZE = 10
 var snake = Snake()
 val feed = Feed()
