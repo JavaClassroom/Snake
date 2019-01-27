@@ -49,10 +49,10 @@ var state = State.START //состояние игры
     }
 
 fun main(args: Array<String>) {
-    /*EventQueue.invokeLater {
+    EventQueue.invokeLater {
         window = Window("Змейка")
-    }*/
-    window = Window("Змейка")
+    }
+    //window = Window("Змейка")
 }
 
 class Snake {
@@ -74,14 +74,13 @@ class Snake {
             state = State.END
             return
         }
+        val last2 = last()
         list.remove(last())
         list.add(0, future(side))
-        if (isFeed(first())){
+        if ( isFeed(first()) ){
             scopes++
             feed.new()
-            val last2 = Point(last())
-            list.add(last2)
-            go()
+            list.add(list.size, last2)
         }
     }
 
@@ -99,12 +98,10 @@ class Snake {
 
 class Feed {
     private fun randomPoint() = Point((0..SIZE - 1).random(), (0..SIZE - 1).random())
-    var point = randomPoint()
+    lateinit var point: Point
     fun new() {
-        while (snake.contain(point) || deadlock(point))
-            point = randomPoint()
+        do point = randomPoint() while (snake.contain(point))
     }
-    fun deadlock(p: Point) = (p.x == 0 || p.x == SIZE-1) and (p.y == 0 || p.y == SIZE-1)
 
     init {
         new()
